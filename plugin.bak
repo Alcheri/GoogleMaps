@@ -1,0 +1,173 @@
+###
+# Copyright © 2024, Barry KW Suridge
+# All rights reserved.
+#
+###
+
+import supybot.log as log
+
+from supybot import callbacks
+from supybot.commands import *
+from supybot.i18n import PluginInternationalization
+
+_ = PluginInternationalization('GoogleMaps')
+
+#XXX: This is a simple plugin to interact with the Google Maps API.
+try:
+    import googlemaps  # Google Maps API
+except ImportError as ie:
+    raise Exception(f'Cannot import module: {ie}')
+
+# Global Error Routine
+def handle_error(error: Exception, context: str = None, user_message: str = "An error occurred."):
+    """
+    Log and handle errors gracefully.
+
+    Args:
+        error (Exception): The exception object.
+        context (str): Additional context about the error.
+        user_message (str): Message to display to the user.
+    """
+    log.error(f"Error occurred: {error} | Context: {context or 'No additional context provided.'}")
+    raise callbacks.Error(user_message)
+
+# Logging Utility
+def log_response_data(response: dict, context: str):
+    """
+    Log relevant keys from the API response for debugging.
+
+    Args:
+        response (dict): The API response data.
+        context (str): Contextual information about the log.
+    """
+    log.info(f"{context} Response Keys: {list(response.keys())}")
+
+# Clean Output Utility
+def clean_output(text: str) -> str:
+    """
+    Clean and simplify text output for user readability.
+
+    Args:
+        text (str): The raw formatted text.
+
+    Returns:
+        str: Cleaned and simplified text.
+    """
+    return text.replace('\x02', '').replace('\n', ' ')
+
+class GoogleMaps(callbacks.Plugin):
+    """
+    Add the help for "@plugin help GoogleMaps" here
+    This should describe *how* to use this plugin.
+    """
+    threaded = True
+
+    def __init__(self, irc):
+        self.__parent = super(GoogleMaps, self)
+        self.__parent.__init__(irc)
+        self.irc = irc
+
+    def process_arguments(self, optlist: dict, user_input: str) -> dict:
+        """
+        Handle and process different argument-based requests.
+        """
+        # log.info(f"Entered process_arguments with optlist: {optlist}, user_input: {user_input}")
+
+        apikey = self.registryValue('googlemapsAPI')
+        if not apikey:
+            raise ValueError("Google Maps API key is missing.")
+
+        gmaps = googlemaps.Client(key=apikey)
+        response = {}
+
+        if 'address' in optlist:
+            response = gmaps.geocode(user_input)
+            log_response_data(response[0], "Address Lookup")
+        elif 'reverse' in optlist:
+            latlng = tuple(map(float, user_input.split(',')))
+            response = gmaps.reverse_geocode(latlng)
+            log_response_data(response[0], "Reverse Geocode")
+        elif 'directions' in optlist:
+            origin, destination = map(str.strip, user_input.split('|', 1))
+            response = gmaps.directions(origin, destination)
+            log_response_data(response[0], "Directions")
+        else:
+            handle_error(ValueError("Invalid option provided."), "Argument Processing")
+
+        return response[0] if response else {}
+    #XXX: End of process_arguments
+
+    @wrap([getopts({'address': '', 'reverse': '', 'directions': ''}), additional('text')])
+    def map(self, irc, msg, args, optlist, user_input=None):
+        """
+        <text>
+        Interact with the Google Maps API to retrieve map information based on user input.
+
+        Args:
+            irc: The IRC object.
+            msg: The message object containing details about the message.
+            args: Additional arguments.
+            user_input: The text input provided by the user.
+
+        Returns:
+            None
+
+        Example:
+            @map --address "1600 Amphitheatre Parkway, Mountain View, CA"
+            @map --reverse "37.4219999,-122.0840575"
+            @map --directions "1600 Amphitheatre Parkway, Mountain View, CA | 2400 Amphitheatre Parkway, Mountain View, CA"
+        """
+        if not self.registryValue('enabled', msg.channel, irc.network):
+            return
+
+        optlist = dict(optlist)
+
+        try:
+            if 'reverse' in optlist:
+                latlng = tuple(map(float, user_input.replace(' ', ',').split(',')))
+
+                # Call process_arguments with correct inputs
+                data = self.process_arguments({'reverse': True}, f"{latlng[0]},{latlng[1]}")
+
+                formatted_address = data.get('formatted_address', 'Unknown location')
+                place_id = data.get('place_id', 'N/A')
+                location_type = data.get('types', [])
+
+                response = (f"Location: \x02{formatted_address}\x02 [ID: {place_id}] "
+                            f"Type: {', '.join(location_type)}")
+                clean_response = clean_output(response)
+                irc.reply(clean_response, prefixNick=False)
+            else:
+                # Handle other options
+                data = self.process_arguments(optlist, user_input)
+
+                if 'directions' in optlist:
+                    leg = data['legs'][0]
+                    start_address = leg['start_address']
+                    end_address = leg['end_address']
+                    distance = leg['distance']['text']
+                    duration = leg['duration']['text']
+
+                    formatted_directions = (f"Route from \x02{start_address}\x02 to \x02{end_address}\x02:\n"
+                                    f"Distance: \x02{distance}\x02, Duration: \x02{duration}\x02.")
+                    clean_directions = clean_output(formatted_directions)
+                    irc.reply(clean_directions, prefixNick=False)
+                else:
+                    formatted_address = data.get('formatted_address', 'Unknown location')
+                    lat = data['geometry']['location']['lat']
+                    lng = data['geometry']['location']['lng']
+                    place_id = data.get('place_id', 'N/A')
+                    location_type = data['types']
+
+                    response = (f"\x02{formatted_address}\x02 [ID: {place_id}] "
+                            f"\x02{lat}\x02 \x02{lng}\x02 {location_type}")
+                    clean_response = clean_output(response)
+                    irc.reply(f"Google Maps: {clean_response}", prefixNick=False)
+        except Exception as e:
+            handle_error(e, "Error handling user input.", "Unable to process your request.")
+
+        return None
+
+Class = GoogleMaps
+
+# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
