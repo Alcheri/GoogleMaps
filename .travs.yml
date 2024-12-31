@@ -18,7 +18,12 @@ script:
 
 notifications:
     email: false
-
+    irc:
+      channels:
+        - "irc.libera.cht#limnoria"
+      template:
+        - "Build #%{build_number}: %{repository} %{branch} (%{commit}) %{author} - %{message}"
+        - "Build details: \x03 %{build_url}"
 matrix:
     allow_failures:
         - "3.9"
