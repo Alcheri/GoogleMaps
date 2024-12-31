@@ -1,0 +1,29 @@
+sudo: false
+language: python
+python:
+  - "3.9"
+  - "3.10"
+  - "3.11"
+  - "3.12"
+  - "3.13"
+
+install:
+    - pip3 install -vr requirements.txt
+
+script:
+  - echo $TRAVIS_PYTHON_VERSION
+  - export PYTHON_MAJOR_VERSION=$(python -c "import sys;print(sys.version_info[0])")
+  - echo $PYTHON_MAJOR_VERSION
+  - supybot-test -c --plugins-dir=. $TEST_ARGS --exclude=./OnJoin
+
+notifications:
+    email: false
+
+matrix:
+    allow_failures:
+        - "3.9"
+        - "3.10"
+        - "3.11"
+        - "3.12"
+        - "3.13"
+    fast_finish: true
