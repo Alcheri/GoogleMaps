@@ -15,7 +15,7 @@
 Go into your Limnoria plugin directory, usually ~/runbot/plugins and run:
 
 ```plaintext
-git clone https://github.com/Alcheri/My-Limnoria-Plugins/GoogleMaps
+git clone https://github.com/Alcheri/GoogleMaps.git
 ```
 
 To install additional requirements, run from /plugins/GoogleMaps:
