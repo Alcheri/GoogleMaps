@@ -9,7 +9,6 @@ python:
 
 install:
     - pip3 install -vr requirements.txt
-    - pip install .    
  
 script:
 - pytest
