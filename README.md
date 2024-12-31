@@ -1,6 +1,6 @@
 # Google Maps
 
-[![Build Status](https://app.travis-ci.com/Alcheri/Plugins.svg?branch=master)](https://app.travis-ci.com/Alcheri/My-Limnoria-Plugins)
+[![Build Status](https://app.travis-ci.com/Alcheri/GoogleMaps.svg?token=pN4Z7GMexmH2xhm1Tq8j&branch=Limnoria-GoogleMaps)](https://app.travis-ci.com/Alcheri/GoogleMaps)
 ![Python versions](https://img.shields.io/badge/Python-version-blue) ![Supported Python versions](https://img.shields.io/badge/3.10%2C%203.11%2C%203.12%2C%203.13-blue.svg)
 
 ## Setting up
