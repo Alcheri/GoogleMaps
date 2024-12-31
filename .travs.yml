@@ -25,7 +25,3 @@ notifications:
         - "Build details: \x03 %{build_url}"
 matrix:
     fast_finish: true
-        - "3.11"
-        - "3.12"
-        - "3.13"
-    fast_finish: true
