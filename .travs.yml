@@ -9,11 +9,8 @@ python:
 
 install:
     - pip3 install -vr requirements.txt
-    
-install:
-  - pip install -r requirements.txt
-  - pip install .
-  
+    - pip install .    
+ 
 script:
   - echo $TRAVIS_PYTHON_VERSION
   - export PYTHON_MAJOR_VERSION=$(python -c "import sys;print(sys.version_info[0])")
