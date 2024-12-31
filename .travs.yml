@@ -20,7 +20,7 @@ notifications:
     email: false
     irc:
       channels:
-        - "irc.libera.cht#limnoria"
+        - "irc.libera.chat#limnoria"
       template:
         - "Build #%{build_number}: %{repository} %{branch} (%{commit}) %{author} - %{message}"
         - "Build details: \x03 %{build_url}"
