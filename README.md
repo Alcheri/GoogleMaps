@@ -2,6 +2,8 @@
 
 ![Python versions](https://img.shields.io/badge/Python-version-blue) ![Supported Python versions](https://img.shields.io/badge/3.10%2C%203.11%2C%203.12%2C%203.13-blue.svg)
 
+![Build Status](./local/status.svg)
+
 ## Setting up
 
 * Step 1: Create a [Google Account](https://accounts.google.com)
