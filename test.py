@@ -1,13 +1,24 @@
 import unittest
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import patch, AsyncMock, MagicMock
-from supybot.test import PluginTestCase
-from .plugin import GoogleMaps
+from supybot.test import PluginTestCase as SupybotPluginTestCase
+
+SupybotPluginTestCase.__test__ = False
+from .plugin import (
+    GoogleMaps,
+    build_directions_url,
+    clean_output,
+    validate_coordinates,
+    CooldownTracker,
+)
 
 # FILE: GoogleMaps/test.py
 
 
-class TestGoogleMaps(PluginTestCase):
+class TestGoogleMaps(SupybotPluginTestCase):
+    __test__ = False
+
     plugins = ("GoogleMaps",)
 
     def setUp(self):
@@ -141,6 +152,39 @@ class TestGoogleMaps(PluginTestCase):
                     )
                 )
         self.assertIn("API call failed with status 500", str(context.exception))
+
+
+class GoogleMapsUnitTestCase(unittest.TestCase):
+    def test_clean_output_removes_control_characters(self):
+        self.assertEqual(clean_output("Line\nwith\x02control"), "Line with control")
+
+    def test_build_directions_url_encodes_user_input(self):
+        result = build_directions_url("Sydney & CBD", "Bondi Beach #1")
+
+        self.assertEqual(
+            result,
+            "https://www.google.com/maps/dir/?api=1&origin=Sydney+%26+CBD&destination=Bondi+Beach+%231",
+        )
+
+    def test_validate_coordinates_normalises_valid_input(self):
+        self.assertEqual(
+            validate_coordinates("-37.5321492, 143.8235249"),
+            "-37.532149,143.823525",
+        )
+
+    def test_validate_coordinates_rejects_out_of_range_input(self):
+        with self.assertRaises(ValueError):
+            validate_coordinates("-137.5321492, 143.8235249")
+
+    def test_cooldown_is_per_user(self):
+        plugin = GoogleMaps.__new__(GoogleMaps)
+        plugin.cooldowns = CooldownTracker()
+        plugin.registryValue = lambda name, *args: 5
+        irc = SimpleNamespace(network="testnet")
+        msg = SimpleNamespace(channel="#test", prefix="nick!user@example")
+
+        self.assertEqual(plugin._cooldown_remaining(irc, msg), 0)
+        self.assertGreaterEqual(plugin._cooldown_remaining(irc, msg), 1)
 
 
 if __name__ == "__main__":
