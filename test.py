@@ -36,6 +36,20 @@ class TestGoogleMaps(SupybotPluginTestCase):
                 )
         self.assertEqual(str(context.exception), "Google Maps API key is missing.")
 
+    def test_missing_map_option_returns_usage_error(self):
+        with self.assertRaises(ValueError) as context:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(
+                self.plugin.process_arguments(
+                    {}, "1600 Amphitheatre Parkway, Mountain View, CA"
+                )
+            )
+
+        self.assertEqual(
+            str(context.exception),
+            "Invalid option provided. Use --address, --reverse, or --directions.",
+        )
+
     @patch("aiohttp.ClientSession.get")
     def test_process_address(self, mock_get):
         mock_response = AsyncMock()

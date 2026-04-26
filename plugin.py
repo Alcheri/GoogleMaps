@@ -27,6 +27,7 @@ _ = PluginInternationalization("GoogleMaps")
 nest_asyncio.apply()  # Allow nested asyncio event loops
 REQUEST_TIMEOUT_SECONDS = 10
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
+USAGE_MESSAGE = "Use --address, --reverse, or --directions."
 
 
 # Global Error Routine
@@ -105,6 +106,11 @@ class GoogleMaps(callbacks.Plugin):
 
     async def process_arguments(self, optlist: dict, user_input: str) -> dict:
         """Handle and process different argument-based requests."""
+        if not any(
+            option in optlist for option in ("address", "reverse", "directions")
+        ):
+            raise ValueError(f"Invalid option provided. {USAGE_MESSAGE}")
+
         apikey = self.registryValue("googlemapsAPI")
         if not apikey:
             raise ValueError("Google Maps API key is missing.")
@@ -133,9 +139,7 @@ class GoogleMaps(callbacks.Plugin):
                 url = f"{base_url}directions/json"
                 params = {"destination": destination, "origin": origin, "key": apikey}
             else:
-                handle_error(
-                    ValueError("Invalid option provided."), "Argument Processing"
-                )
+                raise ValueError(f"Invalid option provided. {USAGE_MESSAGE}")
 
             async with session.get(url, params=params) as response:
                 if response.status != 200:
@@ -239,14 +243,14 @@ class GoogleMaps(callbacks.Plugin):
                 irc.reply(clean_response, prefixNick=False)
             else:
                 irc.error(
-                    "Invalid option provided. Use --address, --reverse, or --directions.",
+                    f"Invalid option provided. {USAGE_MESSAGE}",
                     prefixNick=False,
                 )
         except ValueError as ve:
             log.error(f"Input validation error: {ve}")
             irc.error(str(ve), prefixNick=False)
         except Exception:
-            log.error("Unexpected GoogleMaps error.")
+            log.exception("Unexpected GoogleMaps error.")
             irc.error(
                 "An unexpected error occurred. Please check the logs.", prefixNick=False
             )
