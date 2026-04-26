@@ -28,6 +28,7 @@ nest_asyncio.apply()  # Allow nested asyncio event loops
 REQUEST_TIMEOUT_SECONDS = 10
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 USAGE_MESSAGE = "Use --address, --reverse, or --directions."
+MAP_OPTIONS = frozenset(("address", "reverse", "directions"))
 
 
 # Global Error Routine
@@ -106,9 +107,7 @@ class GoogleMaps(callbacks.Plugin):
 
     async def process_arguments(self, optlist: dict, user_input: str) -> dict:
         """Handle and process different argument-based requests."""
-        if not any(
-            option in optlist for option in ("address", "reverse", "directions")
-        ):
+        if not MAP_OPTIONS.intersection(optlist):
             raise ValueError(f"Invalid option provided. {USAGE_MESSAGE}")
 
         apikey = self.registryValue("googlemapsAPI")
